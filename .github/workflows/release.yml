@@ -13,6 +13,16 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
+      - name: Get release tag
+        id: vars
+        run: echo ::set-output name=tag::${GITHUB_REF#refs/*/}
+      - name: Check output
+        env:
+          RELEASE_VERSION: ${{ steps.vars.outputs.tag }}
+        run: |
+          echo $RELEASE_VERSION
+          echo ${{ steps.vars.outputs.tag }}
+          
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
@@ -25,5 +35,55 @@ jobs:
             Changes in this Release
             - First Change
             - Second Change
-          draft: false
+          draft: true
           prerelease: false
+
+      - uses: actions/download-artifact@v2
+        with:
+          path: dist
+
+      - name: Display structure of downloaded files
+        run: ls -R
+        working-directory: dist
+  
+      - name: upload linux artifact
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./dist/Ubuntu
+          asset_name: ESPHome-Flasher-${{ steps.vars.outputs.tag }}-Ubuntu-x64.exec
+          asset_content_type: application/gzip
+          
+      
+      - name: upload windows x86
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./dist/Windows-x86
+          asset_name: ESPHome-Flasher-${{ steps.vars.outputs.tag }}-Windows-x86.exe
+          asset_content_type: application/executable
+          
+      - name: upload windows x64
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./dist/Windows
+          asset_name: ESPHome-Flasher-${{ steps.vars.outputs.tag }}-Windows-x64.exe
+          asset_content_type: application/executable
+          
+      - name: upload mac os
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./dist/macOS
+          asset_name: ESPHome-Flasher-${{ steps.vars.outputs.tag }}-macOS.zip
+          asset_content_type: application/zip
+        
